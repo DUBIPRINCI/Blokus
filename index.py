@@ -1,1 +1,1 @@
-gfurzvkk
+print('apagan')
