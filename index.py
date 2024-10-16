@@ -7,4 +7,4 @@ print( colors.fg.red, "Amartya")
 print( colors.fg.yellow, "Amartya")
 
 
-print(colors.fg.lightgrey)
+print(colors.reset)
