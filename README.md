@@ -1,4 +1,4 @@
-##Ce qu'il reste à faire :
+## Ce qu'il reste à faire :
 
 - Créer le plateau
 - Afficher le plateau
