@@ -39,5 +39,4 @@ class colors:
 
 #print(colors.bg.green, "SKk", colors.fg.red, "Amartya")
 #print(colors.bg.lightgrey, "SKk", colors.fg.red, "Amartya")
-
-print( colors.fg.red, "Amartya")
+#print( colors.fg.red, "Amartya")
