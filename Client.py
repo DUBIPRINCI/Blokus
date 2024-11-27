@@ -1,5 +1,8 @@
 import asyncio
 import json
+
+
+"""
 grille_tetris = [[0] * 10 for _ in range(20)]
 
 
@@ -62,7 +65,14 @@ async def send_receive_matrix(reader, writer):
         for row in matrix:
             print(row)
         round +=1
+"""
+
+
+
 async def main():
+    """
+    partie réseau
+    """
     reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
 
     await send_receive_matrix(reader, writer)

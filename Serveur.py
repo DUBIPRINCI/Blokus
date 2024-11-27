@@ -1,6 +1,6 @@
 import asyncio
 import json
-
+"""
 grille_tetris = [[0] * 10 for _ in range(20)]
 
 
@@ -60,8 +60,15 @@ async def handle_client(reader, writer):
             print(row)
         round +=1
     writer.close()
+"""
+
+
+
 
 async def main():
+    """
+    partie réseau
+    """
     server = await asyncio.start_server(
         handle_client, '127.0.0.1', 8888)
 
