@@ -70,7 +70,7 @@ class Blokus:
         """Affiche les pièces disponibles pour le joueur."""
         print(f"Pièces disponibles pour {joueur.nom} :")
         for idx, piece in enumerate(joueur.tab_piece):
-            print(f"Pièce {idx + 1}:")
+            print(f"Pièce {idx + 1} (Valeur : {piece.value} cases) :")
             for ligne in piece.shape:
                 print(" ".join(ligne))
             print()
@@ -162,6 +162,22 @@ class Blokus:
             # Autres tours : les règles des coins et des faces
             return coin_touches and not face_touches
 
+    def calculerGagnant(self):
+        """Calcule et affiche le gagnant."""
+        scores = {}
+        for joueur in self.joueurs:
+            score = sum(piece.value for piece in joueur.tab_piece)
+            scores[joueur.nom] = score
+        score_min = min(scores.values())
+        gagnants = [joueur for joueur, score in scores.items() if score == score_min]
+        print("\n--- Résultats Finaux ---")
+        for joueur, score in scores.items():
+            print(f"{joueur} : {score} points")
+        if len(gagnants) > 1:
+            print(f"\nÉgalité entre : {', '.join(gagnants)} avec {score_min} points !")
+        else:
+            print(f"\nLe gagnant est : {gagnants[0]} avec {score_min} points !")
+
     def jouer(self):
         """Gère la boucle principale du jeu."""
         joueur_actuel = 0
@@ -173,15 +189,11 @@ class Blokus:
                 event = keyboard.read_event(suppress=True)
                 if event.event_type == "down":  # Ne traiter que les pressions (pas les relâchements)
                     key = event.name
-                    if key == "1":
-                        self.piece_active = joueur.tab_piece[0]
-                        self.position_active = (10, 10)
-                    elif key == "2":
-                        self.piece_active = joueur.tab_piece[1]
-                        self.position_active = (10, 10)
-                    elif key == "3":
-                        self.piece_active = joueur.tab_piece[2]
-                        self.position_active = (10, 10)
+                    if key in ["1", "2", "3"]:
+                        piece_idx = int(key) - 1
+                        if piece_idx < len(joueur.tab_piece):  # Valider l'indice
+                            self.piece_active = joueur.tab_piece[piece_idx]
+                            self.position_active = (10, 10)
                     elif key == "haut":
                         self.deplacerPiece(-1, 0)
                     elif key == "bas":
@@ -205,13 +217,14 @@ class Blokus:
                         return
                     self.afficherEtatJeu(joueur)
             joueur_actuel = (joueur_actuel + 1) % self.nbJoueur
-        print("Fin de la partie !")
+        self.calculerGagnant()
 
 
 class Piece:
     def __init__(self, shape, color):
         self.shape = shape  # Représentation en liste de listes
         self.color = color  # Couleur de la pièce
+        self.value = sum(1 for row in shape for cell in row if cell != " ")  # Calcul de la valeur
 
     def tournerLaPiece(self, rotation):
         """Tourne la pièce selon l'angle donné (en degrés, multiples de 90)."""
