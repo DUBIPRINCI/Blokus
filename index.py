@@ -19,6 +19,7 @@ class Blokus:
         self.initJoueurs()
         self.piece_active = None
         self.position_active = None
+        self.tours = {joueur.nom: 0 for joueur in self.joueurs}  # Compteur de tours par joueur
 
     def initPlateau(self):
         """Initialise un plateau de 22x22 entouré de bordures."""
@@ -99,27 +100,67 @@ class Blokus:
     def placerPiece(self, joueur):
         """Place une pièce si elle respecte les règles de placement."""
         piece, (x, y) = self.piece_active, self.position_active
-        if self.verifierPlacement(piece, x, y):
+        if self.verifierPlacement(joueur, piece, x, y):
             for i, ligne in enumerate(piece.shape):
                 for j, cell in enumerate(ligne):
                     if cell != " ":
                         self.plateau[x + i][y + j] = cell
             joueur.tab_piece.remove(piece)
+            self.pieces_placees.append((piece, x, y))  # Ajouter la pièce au placement historique
             self.piece_active, self.position_active = None, None
+            self.tours[joueur.nom] += 1  # Incrémenter le compteur de tours
             return True
         return False
 
-    def verifierPlacement(self, piece, x, y):
+    def verifierPlacement(self, joueur, piece, x, y):
         """Vérifie si une pièce peut être placée à la position donnée."""
+        if not (1 <= x <= 20 and 1 <= y <= 20):
+            return False  # En dehors des limites
+
+        coin_touches = False
+        face_touches = False
+
         for i, ligne in enumerate(piece.shape):
             for j, cell in enumerate(ligne):
                 if cell != " ":
                     px, py = x + i, y + j
                     if not (1 <= px <= 20 and 1 <= py <= 20):
-                        return False  # En dehors des limites
+                        return False  # En dehors des limites du plateau
+                    
                     if self.plateau[px][py] != "□":
                         return False  # Superposition
-        return True
+
+                    # Vérification des coins et des faces
+                    adjacent_faces = [(px - 1, py), (px + 1, py), (px, py - 1), (px, py + 1)]
+                    adjacent_corners = [(px - 1, py - 1), (px - 1, py + 1), (px + 1, py - 1), (px + 1, py + 1)]
+
+                    for fx, fy in adjacent_faces:
+                        if (
+                            1 <= fx <= 20
+                            and 1 <= fy <= 20
+                            and self.plateau[fx][fy].startswith(f"\033[1;{self.piece_active.color}")
+                        ):
+                            face_touches = True
+
+                    for cx, cy in adjacent_corners:
+                        if (
+                            1 <= cx <= 20
+                            and 1 <= cy <= 20
+                            and self.plateau[cx][cy].startswith(f"\033[1;{self.piece_active.color}")
+                        ):
+                            coin_touches = True
+
+        if self.tours[joueur.nom] == 0:
+            # Premier tour du joueur : doit être dans un coin
+            return any(
+                (x + i, y + j) in [(1, 1), (1, 20), (20, 1), (20, 20)]
+                for i, ligne in enumerate(piece.shape)
+                for j, cell in enumerate(ligne)
+                if cell != " "
+            )
+        else:
+            # Autres tours : les règles des coins et des faces
+            return coin_touches and not face_touches
 
     def jouer(self):
         """Gère la boucle principale du jeu."""
