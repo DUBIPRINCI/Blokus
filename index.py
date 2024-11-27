@@ -1,6 +1,5 @@
 import os
 import keyboard
-import time
 
 # --------------------------- DEBUT ---------------------------
 
@@ -16,9 +15,11 @@ class Blokus:
         self.joueurs = []
         self.plateau = self.initPlateau()
         self.pieces_placees = []  # Historique des pièces placées
+        self.colors = [31, 32, 33, 34]  # Couleurs ANSI (rouge, vert, jaune, bleu)
         self.initJoueurs()
         self.piece_active = None
         self.position_active = None
+        self.tours = {joueur.nom: 0 for joueur in self.joueurs}  # Compteur de tours par joueur
 
     def initPlateau(self):
         """Initialise un plateau de 22x22 entouré de bordures."""
@@ -29,19 +30,24 @@ class Blokus:
         return plateau
 
     def afficherPlateau(self):
-        """Affiche le plateau de manière lisible, y compris une pièce active."""
+        """Affiche le plateau de manière lisible, avec la pièce active."""
         for i, ligne in enumerate(self.plateau):
             for j, cell in enumerate(ligne):
+                cell_to_print = cell
+                # Si une pièce active est présente, affiche-la sauf si un carré plein est déjà là
                 if self.piece_active and self.position_active:
-                    # Vérifier si une pièce active doit être affichée ici
                     x, y = self.position_active
                     if 1 <= x <= 20 and 1 <= y <= 20:
                         for pi, ligne_piece in enumerate(self.piece_active.shape):
                             for pj, cell_piece in enumerate(ligne_piece):
-                                if cell_piece != " ":
-                                    if i == x + pi and j == y + pj:
-                                        cell = f"\033[1;{30 + (i % 4) + 1}m□\033[0m" 
-                print(cell, end=" ")
+                                if (
+                                    cell_piece != " "
+                                    and i == x + pi
+                                    and j == y + pj
+                                    and self.plateau[i][j] == "□"
+                                ):
+                                    cell_to_print = f"\033[1;{self.piece_active.color}m□\033[0m"
+                print(cell_to_print, end=" ")
             print()
 
     def initJoueurs(self):
@@ -52,24 +58,12 @@ class Blokus:
 
     def creerPieces(self, joueur_id):
         """Crée des pièces avec une couleur unique par joueur."""
-        symbole = f"\033[1;{30 + joueur_id}m■\033[0m"  # Carré plein coloré
-        return [      
-            Piece([[symbole]]),
-            Piece([[symbole,symbole]]),
-            Piece([[symbole, symbole], [symbole, " "]]),
-            Piece([[symbole, symbole, symbole]]),
-            Piece([[symbole, symbole, symbole, symbole]]),
-            Piece([[symbole, symbole], [symbole, symbole]]),
-            Piece([[" ", symbole],[" ", symbole],[symbole, symbole]]),
-            Piece([[" ", symbole],[symbole, symbole],[symbole, " "]]),
-            Piece([[symbole, " "],[symbole, symbole],[symbole, " "]]),
-            Piece([[" ", symbole],[symbole, symbole],[symbole, symbole]]),
-            Piece([[" ", symbole," "],[symbole, symbole, symbole],[" ", symbole, " "]]),
-            Piece([[" ", " ", symbole, " "],[symbole, symbole, symbole, symbole]]),
-            #Piece([[symbole, symbole," "],[symbole, symbole, symbole],[" ", symbole, " "]]),
-            
-
-
+        color = self.colors[joueur_id - 1]  # Attribuer une couleur depuis la liste
+        symbole = f"\033[1;{color}m■\033[0m"  # Carré plein coloré
+        return [
+            Piece([[symbole]], color),
+            Piece([[symbole, symbole], [symbole, " "]], color),
+            Piece([[symbole, symbole, symbole]], color),
         ]
 
     def afficherPiecesDisponibles(self, joueur):
@@ -106,27 +100,67 @@ class Blokus:
     def placerPiece(self, joueur):
         """Place une pièce si elle respecte les règles de placement."""
         piece, (x, y) = self.piece_active, self.position_active
-        if self.verifierPlacement(piece, x, y):
+        if self.verifierPlacement(joueur, piece, x, y):
             for i, ligne in enumerate(piece.shape):
                 for j, cell in enumerate(ligne):
                     if cell != " ":
                         self.plateau[x + i][y + j] = cell
             joueur.tab_piece.remove(piece)
+            self.pieces_placees.append((piece, x, y))  # Ajouter la pièce au placement historique
             self.piece_active, self.position_active = None, None
+            self.tours[joueur.nom] += 1  # Incrémenter le compteur de tours
             return True
         return False
 
-    def verifierPlacement(self, piece, x, y):
+    def verifierPlacement(self, joueur, piece, x, y):
         """Vérifie si une pièce peut être placée à la position donnée."""
+        if not (1 <= x <= 20 and 1 <= y <= 20):
+            return False  # En dehors des limites
+
+        coin_touches = False
+        face_touches = False
+
         for i, ligne in enumerate(piece.shape):
             for j, cell in enumerate(ligne):
                 if cell != " ":
                     px, py = x + i, y + j
                     if not (1 <= px <= 20 and 1 <= py <= 20):
-                        return False  # En dehors des limites
+                        return False  # En dehors des limites du plateau
+                    
                     if self.plateau[px][py] != "□":
                         return False  # Superposition
-        return True
+
+                    # Vérification des coins et des faces
+                    adjacent_faces = [(px - 1, py), (px + 1, py), (px, py - 1), (px, py + 1)]
+                    adjacent_corners = [(px - 1, py - 1), (px - 1, py + 1), (px + 1, py - 1), (px + 1, py + 1)]
+
+                    for fx, fy in adjacent_faces:
+                        if (
+                            1 <= fx <= 20
+                            and 1 <= fy <= 20
+                            and self.plateau[fx][fy].startswith(f"\033[1;{self.piece_active.color}")
+                        ):
+                            face_touches = True
+
+                    for cx, cy in adjacent_corners:
+                        if (
+                            1 <= cx <= 20
+                            and 1 <= cy <= 20
+                            and self.plateau[cx][cy].startswith(f"\033[1;{self.piece_active.color}")
+                        ):
+                            coin_touches = True
+
+        if self.tours[joueur.nom] == 0:
+            # Premier tour du joueur : doit être dans un coin
+            return any(
+                (x + i, y + j) in [(1, 1), (1, 20), (20, 1), (20, 20)]
+                for i, ligne in enumerate(piece.shape)
+                for j, cell in enumerate(ligne)
+                if cell != " "
+            )
+        else:
+            # Autres tours : les règles des coins et des faces
+            return coin_touches and not face_touches
 
     def calculerGagnant(self):
         """Calcule et affiche le gagnant."""
@@ -162,15 +196,16 @@ class Blokus:
                             self.position_active = (10, 10)
                     elif key == "haut":
                         self.deplacerPiece(-1, 0)
-                    elif key == "down":
-                        print("Placement invalide, réessayez.")
+                    elif key == "bas":
                         self.deplacerPiece(1, 0)
-                    elif key == "left":
-                        print("Placement invalide, réessayez.")
+                    elif key == "gauche":
                         self.deplacerPiece(0, -1)
-                    elif key == "right":
-                        print("Placement invalide, réessayez.")
+                    elif key == "droite":
                         self.deplacerPiece(0, 1)
+                    elif key == "space":
+                        # Tourne la pièce active de 90 degrés
+                        if self.piece_active:
+                            self.piece_active.tournerLaPiece(90)
                     elif key == "enter":
                         if self.piece_active and self.position_active:
                             if self.placerPiece(joueur):
@@ -180,21 +215,21 @@ class Blokus:
                     elif key == "backspace":
                         print("Fin du jeu.")
                         return
-                    # Rafraîchir uniquement après une action valide
                     self.afficherEtatJeu(joueur)
             joueur_actuel = (joueur_actuel + 1) % self.nbJoueur
         self.calculerGagnant()
 
 
 class Piece:
-    def __init__(self, shape):
+    def __init__(self, shape, color):
         self.shape = shape  # Représentation en liste de listes
         self.color = color  # Couleur de la pièce
         self.value = sum(1 for row in shape for cell in row if cell != " ")  # Calcul de la valeur
 
     def tournerLaPiece(self, rotation):
-        """Tourne la pièce selon l'angle donné."""
+        """Tourne la pièce selon l'angle donné (en degrés, multiples de 90)."""
         for _ in range(rotation // 90):
+            # Transposer la matrice et inverser chaque ligne pour tourner à 90 degrés
             self.shape = [list(reversed(col)) for col in zip(*self.shape)]
 
 
