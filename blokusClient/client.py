@@ -1,7 +1,7 @@
 import asyncio
 import os
 
-HOST = 'dubiserv.fr'
+HOST = '127.0.0.1'
 PORT = 50000
 
 
@@ -141,7 +141,6 @@ async def main():
 
     writer.close()
     await writer.wait_closed()
-
 
 def cls():
     """Nettoyer le terminal."""

@@ -87,10 +87,8 @@ def handle_client(client_socket, client_address):
                     if not info['started']  # Exclut les parties démarrées
                 ])
                 if available_parties:
-                    print(f"Parties trouvées :\n{available_parties}")
                     client_socket.sendall(f"Parties disponibles :\n{available_parties}".encode('utf-8'))
                 else:
-                    print("Aucune partie disponible pour LIST.")
                     client_socket.sendall("Aucune partie disponible pour le moment.".encode('utf-8'))
 
             elif data == "QUIT" or data == "EXIT":
@@ -141,8 +139,16 @@ def handle_server_commands():
                     print(f"- {name}: {len(info['clients'])}/{info['num_players']} joueurs (Démarrée : {info['started']})")
             else:
                 print("Aucune partie en cours.")
+        elif command == "/player_list":
+            print("Liste des joueurs connectés :")
+            if clients:
+                for client_socket, (client_name, party_name) in clients.items():
+                    print(f"- {client_name} (dans la partie : {party_name or 'Aucune'})")
+            else:
+                print("Aucun joueur connecté.")
         else:
-            print("Commande inconnue. Commandes disponibles : /party_list")
+            print("Commande inconnue. Commandes disponibles : /party_list, /player_list")
+
 
 if __name__ == "__main__":
     start_server()
