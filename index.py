@@ -35,7 +35,7 @@ class Blokus:
         plateau = [["■"] * 22 for _ in range(22)]
         for i in range(1, 21):
             for j in range(1, 21):
-                plateau[i][j] = "□"
+                plateau[i][j] = "·"
         return plateau
 
     def afficherPlateau(self):
@@ -52,7 +52,7 @@ class Blokus:
                                     cell_piece != " "
                                     and i == x + pi
                                     and j == y + pj
-                                    and self.plateau[i][j] == "□"
+                                    and self.plateau[i][j] == "·"
                                 ):
                                     cell_to_print = f"\033[1;{self.piece_active.color}m□\033[0m"
                 print(cell_to_print, end=" ")
@@ -179,7 +179,7 @@ class Blokus:
                     if not (1 <= px <= 20 and 1 <= py <= 20):
                         return False
 
-                    if self.plateau[px][py] != "□":
+                    if self.plateau[px][py] != "·":
                         return False
 
                     adjacent_faces = [(px - 1, py), (px + 1, py), (px, py - 1), (px, py + 1)]
