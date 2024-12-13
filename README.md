@@ -186,15 +186,4 @@ Pas de bugs rencontré dans la version locale grâce à de nombreux else pour ne
 
 ## Le projet en image
 
-#### Premier tour :
-
-![Image du premier tour](images/premier_tour.png)
-
-#### Images de fin de parties :
-
-![fin de partie 1](images/fin_de_partie1.png)
-![fin de partie 2](images/fin_de_partie2.png)
-
-### En GIF !
-
 ![Gif d'une partie](images/blokus.gif)
